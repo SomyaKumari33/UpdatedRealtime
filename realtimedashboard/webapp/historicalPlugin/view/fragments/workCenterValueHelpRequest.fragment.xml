@@ -14,9 +14,9 @@ cancel=".onworkCenterVHDiaCancelPress">
 <vh:filterBar>
 <fb:FilterBar id="idworkCenterVHDiaFB" search="onworkCenterVHDiaSearch">
 <fb:filterGroupItems>
-<fb:FilterGroupItem id="idworkCenterVHDiaFB-workCenterFGI" groupName="group1" visibleInFilterBar="true" name="workCenter" label="workCenter">
+<fb:FilterGroupItem id="idworkCenterVHDiaFB-workCenterFGI" groupName="group1" visibleInFilterBar="true" name="description" label="Description">
 <fb:control>
-<Input id="idworkCenterVHDiaFB-workCenterFGI-Input" placeholder="Search for workCenter...."/>
+<Input id="idworkCenterVHDiaFB-workCenterFGI-Input" placeholder="Search by workCenter or Description..."/>
 </fb:control>
 </fb:FilterGroupItem>
 </fb:filterGroupItems>

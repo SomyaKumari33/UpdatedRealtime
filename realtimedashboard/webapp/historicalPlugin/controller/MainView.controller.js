@@ -11,14 +11,23 @@ sap.ui.define([
     "sap/ui/core/Fragment",
     "sap/ui/core/Control",
     "sap/ui/table/Column",
-    "sap/m/MessageToast"
+    "sap/m/MessageToast",
+    "sap/m/MessageBox",
 
-], function (jQuery, PluginViewController, JSONModel, ColumnListItem, Text, Label, Filter, FilterOperator, PersonalizableInfo, Fragment, Control, Column, MessageToast) {
+    'sap/ui/export/Spreadsheet', // Import the Spreadsheet library
+    "sap/m/TablePersoController",
+    // "sap/ui/table/TablePersonalizeService"
+
+
+
+
+], function (jQuery, PluginViewController, JSONModel, ColumnListItem, Text, Label, Filter, FilterOperator, PersonalizableInfo, Fragment, Control, Column, MessageToast, MessageBox, Spreadsheet, TablePersoController) {
     "use strict";
 
     return PluginViewController.extend("company.custom.plugins.realtimedashboard.historicalPlugin.controller.MainView", {
         onInit: function () {
             PluginViewController.prototype.onInit.apply(this, arguments);
+            
             var oModel = new JSONModel({
                 isOperatorEnabled: false,//Initially disable the operator
                 workCenter: "",
@@ -26,22 +35,94 @@ sap.ui.define([
                 workCenters: [],
                 operators: [],
                 startDate: null,
-                endDate: null
-            });
+                endDate: null,
+                tabItems: [], // Initialize with an empty array to ensure no data is displayed
+
+                columns: {
+                    PLANT: true,
+                    WORKCENTER: true,
+                    WORKCENTER_DESCRIPTION: true,
+
+                    OPERATOR: true,
+                    ORDER_NO: true,
+                    ORDER_STATUS: true,
+                    RESOURCE: true,
+                    HEADER_MATERIAL: true,
+
+                    HEADER_MATERIAL_DESCRIPTION: true,
+                    COMPONENT: true,
+                    COMPONENT_DESCRIPTION: true,
+
+                    TARGET: true,
+                    UPPER_TOLERANCE: true,
+                    LOWER_TOLERANCE: true,
+                    QUANTITY: true,
+                    UNIT_OF_MEASURE: true,
+                    CONSUMPTION_DATE: true
+                }
+            
+
+        });
+                
+                  
+            
+            // console.log(aColumns);
+
 
 
             // Set the model to the view for access in UI components
             this.getView().setModel(oModel, "data");
+            // this._fetchResourceData();
+            // this._fetchOrderData();
+            // this._fetchworkCenterData();
+            this._initializeData();
 
 
 
-            this._fetchResourceData();
-            this._fetchConsumptionData();
+
+         
+             // Initialize the table personalization
+        
+        const TablePersonalizeService = {
+            oData: {
+              _persoSchemaVersion: '1.0',
+              aColumns: []
+            },
+
+            getPersData: function() {
+              const oDeferred = new jQuery.Deferred();
+              if (!this._oBundle) {
+                this._oBundle = this.oData;
+              }
+              const oBundle = this._oBundle;
+              oDeferred.resolve(oBundle);
+              return oDeferred.promise();
+            },
+
+            setPersData: function(oBundle) {
+              const oDeferred = new jQuery.Deferred();
+              this._oBundle = oBundle;
+              oDeferred.resolve();
+              return oDeferred.promise();
+            }
+          };
+          TablePersonalizeService.getPersData();
+          TablePersonalizeService.setPersData({});
+          this._oTableSettings = new TablePersoController({
+            table: this.byId('table'), //Reference to your table
+            componentName: 'settings',
+            persoService: TablePersonalizeService
+          }).activate();
+        },
+        _initializeData: function () {
+        
+             this._fetchResourceData();
             this._fetchOrderData();
             this._fetchworkCenterData();
-
-
         },
+        onOpenTablePersonalization: function () {
+                this._oTableSettings.openDialog();
+            },
 
 
         formatDateTimeToSeconds: function (sDate) {
@@ -71,19 +152,31 @@ sap.ui.define([
             return `${sFormattedDate} ${sTime || "00:00:00"}`; // Default to "00:00:00" if time is not provided
         },
 
+//Resource
+onResourceInputChange: function (oEvent) {
+    var oInput = oEvent.getSource();
+    var sValue = oInput.getValue();
 
+    if (!sValue) {
+        oInput.setValueState("Error");
+        oInput.setValueStateText("Resource is required.");
+    } else {
+        oInput.setValueState("None");
+    }
+},
 
+       
         onSearch: function () {
             var oView = this.getView(),
                 oViewModel = oView.getModel("data"),
                 aFilters = [];
-
+        
             // Collect other filters
             var sOrder = oViewModel.getProperty("/order");
             var sResource = oViewModel.getProperty("/resource");
             var sworkCenter = oViewModel.getProperty("/workCenter");
             var suserId = oViewModel.getProperty("/userId");
-
+        
             if (sOrder) {
                 aFilters.push(new sap.ui.model.Filter("ORDER_NO", sap.ui.model.FilterOperator.EQ, sOrder));
             }
@@ -96,48 +189,62 @@ sap.ui.define([
             if (suserId) {
                 aFilters.push(new sap.ui.model.Filter("OPERATOR", sap.ui.model.FilterOperator.EQ, suserId));
             }
-
-            // BOM Filter
-            var oBOMFGIControl = oView.byId('idBOMFGI-MI');
-            var aBOMTokens = oBOMFGIControl.getTokens();
-            var sBOMInputValue = oBOMFGIControl.getValue();
-
-            if (aBOMTokens.length > 0) {
-                aBOMTokens.forEach(function (oToken) {
-                    aFilters.push(new sap.ui.model.Filter("BOM", sap.ui.model.FilterOperator.EQ, oToken.getKey()));
-                });
+        
+            // Start Date & Time
+            var oStartDate = oView.byId("idStartDatePicker").getDateValue();
+            var oStartTime = oView.byId("idStartTimePicker").getValue();
+        
+            //End Date & Time
+            var oEndDate = oView.byId("idFGIEndDatePicker").getDateValue();
+            var oEndTime = oView.byId("idEndTimePicker").getValue();
+        
+            // Combine Start Date and Time
+            if (oStartDate && oStartTime) {
+                var sStartDateTime = this.formatDateTime(oStartDate, oStartTime);
+                aFilters.push(new sap.ui.model.Filter("CONSUMPTION_DATE", sap.ui.model.FilterOperator.GE, sStartDateTime));
             }
-            if (sBOMInputValue) {
-                aFilters.push(new sap.ui.model.Filter("BOM", sap.ui.model.FilterOperator.EQ, sBOMInputValue));
+        
+            // Combine End Date and Time
+            if (oEndDate && oEndTime) {
+                var sEndDateTime = this.formatDateTime(oEndDate, oEndTime);
+                aFilters.push(new sap.ui.model.Filter("CONSUMPTION_DATE", sap.ui.model.FilterOperator.LE, sEndDateTime));
             }
-
-            //Add start and end date filters
-            var oStartDateInput = this.getView().byId("idFGIStartDateTimePicker"),
-                oStartDate = oStartDateInput.getDateValue(),
-                oEndDateInput = this.getView().byId("idFGIEndDateTimePicker"),
-                oEndDate = oEndDateInput.getDateValue();
-
-            if(oStartDate){
-                aFilters.push(new sap.ui.model.Filter("CONSUMPTION_DATE", sap.ui.model.FilterOperator.GT, oStartDate));
-            }
-            if(oEndDate){
-                aFilters.push(new sap.ui.model.Filter("CONSUMPTION_DATE", sap.ui.model.FilterOperator.LT, oEndDate));
-            }
-
+        
             // Combine all filters
             var oFilter = new sap.ui.model.Filter({
                 filters: aFilters,
                 and: true
             });
-
-            // Apply filters to the table binding
+        
+            // Fetch filtered data and update the table
             var oTable = oView.byId("table");
-            if (oTable) {
-                oTable.getBinding("items").filter(oFilter);
+            var oItemsTemplate = this.getView().byId("idTableListItem");
+        
+            if (aFilters.length > 0) {
+                 // Fetch additional data
+                
+                this._fetchConsumptionData(oFilter, function (filteredData) {
+                    oViewModel.setProperty("/tabItems", filteredData);
+        
+                    // Bind data to table dynamically
+                    oTable.bindItems({
+                        path: "/tabItems",
+                        model: "data",
+                        template: oItemsTemplate,
+                        templateShareable: true
+                    });
+                    
+                   
+                }.bind(this));
+            } else {
+                sap.m.MessageToast.show("Please select filters before searching.");
+            
             }
-
-            this._fetchConsumptionData();
         },
+        
+        
+
+         
 
         /**
          * Converts a 12-hour time format to 24-hour format.
@@ -176,24 +283,69 @@ sap.ui.define([
 
 
 
-        _fetchConsumptionData: function () {
+        _fetchConsumptionData: function (oFilter, fnCallback) {
             var sUrl = 'https://dbapicall.cfapps.eu20-001.hana.ondemand.com/api/get/consumptionData';
             var oPayload = {
                 plant: this.getPodController().getUserPlant()
             };
-
-            this.ajaxPostRequest(sUrl, oPayload, function (oResponseData) {
-                //Convert CONSUMPTION_DATE property from string to Date
-                oResponseData.forEach(item=> item.CONSUMPTION_DATE = new Date(item.CONSUMPTION_DATE))
-                this.getView().getModel("data").setProperty("/tabItems", oResponseData);
-                MessageToast.show("Data successfully retrieved and bound!");
-                  // Log the data to the console
-                  console.log("CONSUMPTION Data:", oResponseData);
-            }.bind(this), function (oError) {
-                MessageBox.error("Error fetching data: " + (oError.responseText || oError.statusText));
-            });
-            // console.log("CONSUMPTION DATA:", oResponseData);
+        
+            this.ajaxPostRequest(
+                sUrl,
+                oPayload,
+                function (oResponseData) {
+                    // Convert CONSUMPTION_DATE property from string to Date
+                    oResponseData.forEach(item => {
+                        item.CONSUMPTION_DATE = new Date(item.CONSUMPTION_DATE);
+                    });
+        
+                    if (oFilter) {
+                        // Manually filter the data
+                        var aFilteredData = oResponseData.filter(item => {
+                            // Apply each filter in the oFilter.filters array
+                            return oFilter.aFilters.every(subFilter => {
+                                var sPath = subFilter.sPath;
+                                var sOperator = subFilter.sOperator;
+                                var oValue = subFilter.oValue1;
+        
+                                // Handle specific filter logic based on operator
+                                switch (sOperator) {
+                                    case sap.ui.model.FilterOperator.EQ:
+                                        return item[sPath] === oValue;
+                                    case sap.ui.model.FilterOperator.GT:
+                                        return new Date(item[sPath]) > oValue;
+                                    case sap.ui.model.FilterOperator.LT:
+                                        return new Date(item[sPath]) < oValue;
+                                    default:
+                                        return true; // Add support for more operators if needed
+                                }
+                            });
+                        });
+        
+                        // Update the model with the filtered data
+                        this.getView().getModel("data").setProperty("/tabItems", aFilteredData);
+        
+                        // Execute the callback with filtered data
+                        if (fnCallback) {
+                            fnCallback(aFilteredData);
+                        }
+                    } else {
+                        // No filter, set full data
+                        this.getView().getModel("data").setProperty("/tabItems", oResponseData);
+        
+                        // Execute the callback with full data
+                        if (fnCallback) {
+                            fnCallback(oResponseData);
+                        }
+                    }
+        
+                    MessageToast.show("Filtered data loaded!");
+                }.bind(this),
+                function (oError) {
+                    MessageBox.error("Error fetching data: " + (oError.responseText || oError.statusText));
+                }
+            );
         },
+        
 
         ajaxPostRequest: function (sUrl, oPayload, fnSuccess, fnError) {
             $.ajax({
@@ -206,6 +358,26 @@ sap.ui.define([
             });
         },
 
+        formatDate: function (sDate) {
+            if (!sDate) return "";
+            var oDate = new Date(sDate);
+            if (isNaN(oDate.getTime())) return sDate;
+            var oDateFormat = sap.ui.core.format.DateFormat.getDateInstance({
+                pattern: "yyyy-MM-dd"
+            });
+            return oDateFormat.format(oDate);
+        },
+        formatTime: function (sDate) {
+            if (!sDate) return "";
+            var oDate = new Date(sDate);
+            if (isNaN(oDate.getTime())) return sDate;
+
+            var oTimeFormat = sap.ui.core.format.DateFormat.getTimeInstance({
+                pattern: "HH:mm:ss"
+            });
+            return oTimeFormat.format(oDate);
+        },
+
         handleResponseOrders: function (oResponseData) {
             var oModel = this.getView().getModel("data");
             oModel.setProperty("/orders", oResponseData.content);
@@ -214,6 +386,8 @@ sap.ui.define([
         handleResponseResources: function (oResponseData) {
             var oModel = this.getView().getModel("data");
             oModel.setProperty("/resources", oResponseData);
+            console.log("Resources Data:", oModel.getProperty("/resources"));
+
         },
         // handleResponseOrders: function (oResponseData) {
         //     var oModel = this.getView().getModel("data");
@@ -223,6 +397,8 @@ sap.ui.define([
         handleResponseworkCenters: function (oResponseData) {
             var oModel = this.getView().getModel("data");
             oModel.setProperty("/workCenters", oResponseData);
+            console.log("workCenter Data:", oModel.getProperty("/workCenters"));
+
         },
         _fetchOrderData: function () {
             var sUrl = this.getPublicApiRestDataSourceUri() + '/order/v1/orders/list';
@@ -333,6 +509,9 @@ sap.ui.define([
                 oViewModel.setProperty("/operators", []);
             }
         },
+      
+       
+     
 
         onOrderValueHelpRequest: function () {
             var oView = this.getView(),
@@ -432,110 +611,8 @@ sap.ui.define([
 
 
 
-        onBOMValueHelpRequest: function () {
-            if (this._oBomValueHelp) {
-                this._oBomValueHelp.open();
-                return;
-            }
 
-            this.loadFragment({
-                name: "company.custom.plugins.realtimedashboard.historicalPlugin.view.fragments.BOMValueHelpRequest"
-            }).then(function (oDialog) {
-                this._oBomValueHelp = oDialog;
-                this.getView().addDependent(oDialog);
-
-                oDialog.getTableAsync().then(function (oTable) {
-                    if (oTable.bindRows) {
-                        oTable.bindAggregation("rows", {
-                            path: "data>/boms",
-                            events: {
-                                dataReceived: function () {
-                                    oDialog.update();
-                                }
-                            }
-                        });
-
-                        var oColumnBOM = new Column({
-                            label: new Label({ text: "BOM" }),
-                            template: new Text({ wrapping: false, text: "{data>bom}" })
-                        });
-
-                        var oColumnBOMType = new Column({
-                            label: new Label({ text: "BOM Type" }),
-                            template: new Text({ wrapping: false, text: "{data>bomType}" })
-                        });
-
-                        oTable.addColumn(oColumnBOM);
-                        oTable.addColumn(oColumnBOMType);
-
-
-
-                    }
-                }.bind(this));
-
-                oDialog.open();
-            }.bind(this));
-        },
-
-
-        onValueHelpCancelPress: function (oEvent) {
-            this._oBomValueHelp.close();
-        },
-        onBOMVHDiaFilterBarSearch: function (oEvent) {
-            var aSelectionSet = oEvent.getParameter("selectionSet");
-            var aFilters = aSelectionSet.reduce(function (aResult, oControl) {
-                if (oControl.getValue()) {
-                    aResult.push(
-                        new Filter({
-                            path: oControl.getName(),
-                            operator: FilterOperator.Contains,
-                            value1: oControl.getValue()
-                        })
-                    );
-                }
-                return aResult;
-            }, []);
-
-            var oFilter = new Filter({
-                filters: aFilters,
-                and: true // Combine filters with 'AND' logic
-            });
-
-            this._oBomValueHelp.getTableAsync().then(function (oTable) {
-                if (oTable.bindRows) {
-                    oTable.getBinding("rows").filter(oFilter);
-                }
-            });
-        },
-
-        // onBOMValueHelpOkPress: function (oEvent) {
-        //     var aTokens = oEvent.getParameter("tokens");
-
-        //     // Since only single selection is allowed, we can directly take the first token
-        //     if (aTokens.length > 0) {
-        //         var oBOMMultiInput = this.getView().byId("idBOMFGI-MI");
-        //         oBOMMultiInput.setTokens([aTokens[0]]); // Only set the first token
-        //     }
-
-        //     this._oBomValueHelp.close();
-        // },
-
-        onBOMValueHelpOkPress: function (oEvent) {
-            var aTokens = oEvent.getParameter("tokens");
-
-            if (aTokens.length > 0) {
-                var oBOMMultiInput = this.getView().byId("idBOMFGI-MI");
-                oBOMMultiInput.setTokens([aTokens[0]]); // Only set the first token
-                var sSelectedBOM = aTokens[0].getKey(); // Get the selected BOM key
-                var oViewModel = this.getView().getModel("data");
-                oViewModel.setProperty("/bom", sSelectedBOM); // Store selected BOM in the model
-            }
-
-            this._oBomValueHelp.close();
-        },
-
-
-
+        
 
         onResourceValueHelpRequest: function () {
             var oView = this.getView(),
@@ -694,30 +771,38 @@ sap.ui.define([
         },
 
         onworkCenterVHDiaSearch: function (oEvent) {
-            var oFilterBar = oEvent.getSource(),
-                aFilterGroupItems = oFilterBar.getFilterGroupItems(),
-                aFilters = [];
-
-            //Create filters based on selected input Values
-            aFilters = aFilterGroupItems.map(function (oFGI) {
-                var oControl = oFGI.getControl();
+            const oFilterBar = oEvent.getSource();
+            const aFilterGroupItems = oFilterBar.getFilterGroupItems();
+            let aFilters = [];
+        
+            // Create filters for all input fields
+            aFilterGroupItems.forEach((oFGI) => {
+                const oControl = oFGI.getControl();
                 if (oControl && oControl.getValue) {
-                    return new Filter({
-                        path: oFGI.getName(),
-                        operator: FilterOperator.Contains,
-                        value1: oControl.getValue()
-                    });
+                    const sValue = oControl.getValue().trim();
+                    if (sValue) {
+                        // Add both filters for 'workCenter' and 'description' using OR
+                        const oWorkCenterFilter = new Filter("workCenter", FilterOperator.Contains, sValue);
+                        const oDescriptionFilter = new Filter("description", FilterOperator.Contains, sValue);
+                        aFilters.push(new Filter({
+                            filters: [oWorkCenterFilter, oDescriptionFilter],
+                            and: false, // OR condition
+                        }));
+                    }
                 }
-            })
-                .filter(Boolean); //Filter out empty values
-
-            //Get the table for dialog and apply filter 
-            this.oworkCenterVHDia.getTableAsync().then(oTable => {
-                var oRowBindingCtx = oTable.getBinding("rows");
-                //    oRowBindingCtx = oTable.getBinding("rows");
-                oRowBindingCtx.filter(aFilters);
             });
+        
+            // Apply the combined filter to the table
+            if (this.oworkCenterVHDia) {
+                this.oworkCenterVHDia.getTableAsync().then((oTable) => {
+                    const oBinding = oTable.getBinding("rows");
+                    if (oBinding) {
+                        oBinding.filter(aFilters); // Apply filters
+                    }
+                });
+            }
         },
+        
         onworkCenterVHDiaOKPress: function (oEvent) {
             var aSelectedItems = oEvent.getParameter("tokens");
 
@@ -847,19 +932,29 @@ sap.ui.define([
             oModel.setProperty("/workCenter", null); // Clear BOM
             oModel.setProperty("/userId", null); // Clear userId
 
-            // Clear tokens for MultiInputs or similar controls (if applicable)
-            var oBOMInput = oView.byId("idBOMFGI-MI");
-            if (oBOMInput) {
-                oBOMInput.setTokens([]);
-            }
-            // Clear manual BOM input field
-            var oManualBOMInput = oView.byId("idBOMFGI-MI");
-            if (oManualBOMInput) {
-                oManualBOMInput.setValue(""); // Reset the value of manual BOM input
-            }
+            
 
-            this.getView().byId('idFGIStartDateTimePicker').setDateValue();
-            this.getView().byId('idFGIEndDateTimePicker').setDateValue();
+           // Ensure the controls exist before attempting to set values
+    var oStartDatePicker = this.getView().byId('idStartDatePicker');
+    if (oStartDatePicker) {
+        oStartDatePicker.setDateValue(null);
+    }
+
+    var oStartTimePicker = this.getView().byId('idStartTimePicker');
+    if (oStartTimePicker) {
+        oStartTimePicker.setValue("");
+    }
+
+    var oEndDatePicker = this.getView().byId('idFGIEndDatePicker');
+    if (oEndDatePicker) {
+        oEndDatePicker.setDateValue(null);
+    }
+
+    var oEndTimePicker = this.getView().byId('idEndTimePicker');
+    if (oEndTimePicker) {
+        oEndTimePicker.setValue("");
+    }
+
 
             // Clear the table filters
             var oTable = oView.byId("table");
@@ -875,12 +970,154 @@ sap.ui.define([
                     oOperatorField.setEnabled(false); // Disable operator field
                 }
             }
-
-            MessageToast.show("Filters cleared successfully!");
+            //Clear table data
+            oModel.setProperty("/tabItems", []);
+            //Optional: Unbind items to clear the table view
+            var oTable = oView.byId("table");
+            oTable.unbindItems();
+             MessageToast.show("Filters cleared successfully!");
         },
 
+     
+        onExportToExcel: function () {
+            var oModel = this.getView().getModel("data");
+            var aData = oModel.getProperty("/tabItems");
+        
+            // Get visible columns from the "columns" model
+            var oColumnsConfig = oModel.getProperty("/columns");
+            var aVisibleColumns = Object.entries(oColumnsConfig)
+                .filter(([key, isVisible]) => isVisible)
+                .map(([key]) => key);
+        
+            // Define all possible columns with proper formatters
+            var aAllColumns = [
+                { label: 'Plant', property: 'PLANT' },
+                { label: 'Work Center', property: 'WORKCENTER' },
+                { label: 'Work Center Description', property: 'WORKCENTER_DESCRIPTION' },
+                { label: 'Operator', property: 'OPERATOR' },
+                { label: 'Order', property: 'ORDER_NO' },
+                { label: 'Order Status', property: 'ORDER_STATUS' },
+                { label: 'Scale', property: 'RESOURCE' },
+                { label: 'Material Details', property: 'HEADER_MATERIAL', combineWith: 'HEADER_MATERIAL_DESCRIPTION' },
+                { label: 'Component Details', property: 'COMPONENT', combineWith: 'COMPONENT_DESCRIPTION' },
+                { label: 'Target', property: 'TARGET' },
+                { label: 'Upper Tolerance', property: 'UPPER_TOLERANCE' },
+                { label: 'Lower Tolerance', property: 'LOWER_TOLERANCE' },
+                { label: 'Actual Weight', property: 'QUANTITY' },
+                { label: 'UOM', property: 'UNIT_OF_MEASURE' },
+                // Apply the formatDate function to Consumption Date
+                {
+                    label: 'Consumption Date',
+                    property: 'CONSUMPTION_DATE',
+                    type: 'string',
+                    formatter: function (sDate) {
+                        if (!sDate) return "";
+                        var oDate = new Date(sDate);
+                        return sap.ui.core.format.DateFormat.getDateInstance({ pattern: "yyyy-MM-dd" }).format(oDate);
+                    }
+                },
+                // Apply the formatTime function to Consumption Time
+                {
+                    label: 'Consumption Time',
+                    property: 'CONSUMPTION_DATE',
+                    type: 'string',
+                    formatter: function (sDate) {
+                        if (!sDate) return "";
+                        var oDate = new Date(sDate);
+                        return sap.ui.core.format.DateFormat.getTimeInstance({ pattern: "HH:mm:ss" }).format(oDate);
+                    }
+                }
+            ];
+        
+            // Include combined columns explicitly for export
+            var aExportColumns = aAllColumns.filter(column => aVisibleColumns.includes(column.property) || column.combineWith);
+        
+            // Format data for export
+            var aFormattedData = aData.map(item => {
+                var oFormattedItem = {};
+                aExportColumns.forEach(column => {
+                    if (column.combineWith) {
+                        //Combine the properties with a space or separator
+                        oFormattedItem[column.label] = `${item[column.property]} ${item[column.combineWith]}`;
+                    }
+                    else if (column.formatter) {
+                        oFormattedItem[column.label] = column.formatter(item[column.property]);
+                    } else {
+                        oFormattedItem[column.label] = item[column.property];
+                    }
+                });
+                return oFormattedItem;
+            });
+        
+            // Initialize the Spreadsheet with formatted data
+            var oSpreadsheet = new sap.ui.export.Spreadsheet({
+                workbook: {
+                    columns: aExportColumns.map(col => ({
+                        label: col.label,
+                        property: col.label,
+                        type: 'string'
+                    }))
+                },
+                dataSource: aFormattedData,
+                fileName: 'report.xlsx',
+                worker: false,
+                showProgress: true
+            });
+        
+            oSpreadsheet.build().then(function () {
+                console.log('Export to Excel successful!');
+            }).catch(function (oError) {
+                console.error('Error while exporting to Excel:', oError);
+            });
+        },
+        
+     
 
+        // onExportToPDF: function () {
+        //     var oModel = this.getView().getModel("data");
+        //     var aData = oModel.getProperty("/tabItems");
 
+        //     // Create a new jsPDF instance
+        //     var doc = new jsPDF();
+
+        //     // Add title to the PDF
+        //     doc.setFontSize(18);
+        //     doc.text('Exported Table Data', 14, 16);
+
+        //     // Table headers and data
+        //     var columns = [
+        //         'Work Center', 'Operator', 'Order', 'Scale', 'Material Description', 
+        //         'Component', 'BOM', 'Target', 'Actual Weight', 'UOM', 'Consumption Date and Time'
+        //     ];
+
+        //     var rows = aData.map(function (item) {
+        //         return [
+        //             item.WORKCENTER,
+        //             item.OPERATOR,
+        //             item.ORDER_NO,
+        //             item.RESOURCE,
+        //             item.MATERIAL_DESCRIPTION,
+        //             item.COMPONENT,
+        //             item.BOM,
+        //             item.TARGET,
+        //             item.QUANTITY,
+        //             item.UOM,
+        //             this.formatDateTime(item.CONSUMPTION_DATE)
+        //         ];
+        //     }.bind(this));
+
+        //     // Add table to PDF
+        //     doc.autoTable({
+        //         head: [columns],
+        //         body: rows,
+        //         startY: 20, // Start from a position below the title
+        //         margin: { top: 20, left: 10, right: 10, bottom: 10 }
+        //     });
+
+        //     // Save the PDF
+        //     doc.save('report.pdf');
+        // },
+    
 
         onAfterRendering: function () {
 

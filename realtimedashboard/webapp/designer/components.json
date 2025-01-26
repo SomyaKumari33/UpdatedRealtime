@@ -65,6 +65,17 @@
             "productionProcessEnabled": true,
            "productionProcessTitle": "PMNotification",
 			"supportedPodTypes": ["WORK_CENTER","OPERATION","ORDER","OTHER"]
-		}  
+		},
+		{
+			"id": "SomyaPlugin",
+			"type": "VIEW_PLUGIN",
+			"allowMultipleInstances": false,
+			"name": "company.custom.plugins.realtimedashboard.materialConsumptionPlugin",
+			"propertyEditor": "company.custom.plugins.realtimedashboard.materialConsumptionPlugin.builder.PropertyEditor",
+			"i18n": "company.custom.plugins.realtimedashboard.materialConsumptionPlugin.i18n.i18n",
+            "productionProcessEnabled": true,
+           "productionProcessTitle": "company.custom.plugins.realtimedashboard",
+			"supportedPodTypes": ["WORK_CENTER","OPERATION","ORDER","OTHER"]
+		}    
 	]
 }

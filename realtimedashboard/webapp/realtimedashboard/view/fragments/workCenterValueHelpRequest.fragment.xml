@@ -16,9 +16,10 @@ cancel=".onworkCenterVHDiaCancelPress">
 <fb:filterGroupItems>
 <fb:FilterGroupItem id="idworkCenterVHDiaFB-workCenterFGI" groupName="group1" visibleInFilterBar="true" name="description" label="Description">
 <fb:control>
-<Input id="idworkCenterVHDiaFB-workCenterFGI-Input" placeholder="Search by Description..."/>
+<Input id="idworkCenterVHDiaFB-workCenterFGI-Input" placeholder="Search by workCenter or Description..."/>
 </fb:control>
 </fb:FilterGroupItem>
+
 </fb:filterGroupItems>
 </fb:FilterBar>
 </vh:filterBar>

@@ -28,8 +28,19 @@ sap.ui.define([
       // Initialize the chart and fetch data
       this._initChart();
       this._fetchConsumptionData();
-    },
+      
+      //Set up auto-refresh every 1 minute
+      this._startAutoRefresh();
 
+    
+      
+    },
+    _startAutoRefresh: function() {
+      // Store the interval ID to clear it later if needed
+      this._refreshIntervalId = setInterval(function() {
+          this._fetchConsumptionData();
+      }.bind(this), 60000); // 60000 ms = 1 minute
+  },
     onRefreshIconPress: function() {
       this._fetchConsumptionData();
     },
@@ -76,30 +87,6 @@ sap.ui.define([
         }
       });
 
-      //Add filters to the chart based on the resource selection in pod selection model
-      // var oPodSelectionModel = this.getPodSelectionModel(),
-      //   oSelectedResource = oPodSelectionModel.stelSelectedResourceData;
-
-      // if (!oSelectedResource) {
-      //   return;
-      // }
-
-      // var aFilters = [];
-
-      // //Resource filter
-      // aFilters.push(new Filter('RESOURCE', FilterOperator.EQ, oSelectedResource.resource));
-
-      // //Operator filter
-      // aFilters.push(new Filter('OPERATOR', FilterOperator.EQ, oSelectedResource.customData.OPERATOR));
-
-      // //Order filter
-      // aFilters.push(new Filter('ORDER_NO', FilterOperator.EQ, oSelectedResource.customData.ORDER));
-
-      // //Component filter
-      // aFilters.push(new Filter('COMPONENT', FilterOperator.EQ, oSelectedResource.customData.MATERIAL));
-
-      // var oVizFrame = this.getView().byId('idVizFrame');
-      // oVizFrame.getDataset().getBinding('data').filter(aFilters);
     },
 
     _initChart: function() {
@@ -272,6 +259,10 @@ sap.ui.define([
     },
 
     onExit: function() {
+      // Clear the interval when exiting the view
+    if (this._refreshIntervalId) {
+      clearInterval(this._refreshIntervalId);
+  }
       PluginViewController.prototype.onExit.apply(this, arguments);
 
       this.unsubscribe('PageChangeEvent', this.onPageChangeEvent, this);

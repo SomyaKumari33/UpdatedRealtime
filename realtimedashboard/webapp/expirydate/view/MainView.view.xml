@@ -37,7 +37,7 @@ xmlns:html="http://www.w3.org/1999/xhtml" controllerName="company.custom.plugins
       <VBox id='idHeaderVBox' justifyContent="Center" alignItems="Center">
                 <Title
                     id="_IDGenTiMtle1"
-                    text="Finish Goods Expiry Date"
+                    text="Finishes Goods Expiry Date"
                     level="H1"/>
             </VBox>
             <f:SimpleForm id="IdReportForm"

@@ -1,0 +1,69 @@
+<core:FragmentDefinition xmlns="sap.m"
+                          xmlns:core="sap.ui.core"
+                          xmlns:layout="sap.ui.layout">
+   <Dialog id="adaptFiltersDialog" title="Adapt Filters">
+    <content>
+         
+        <VBox>
+    <CheckBox text="Plant" selected="{data>/columns/PLANT}" />
+  
+    <CheckBox text="Work Center" selected="{data>/columns/WORKCENTER}" />
+  
+
+         <CheckBox text="Work Center Description" selected="{data>/columns/WORKCENTER_DESCRIPTION}" />
+    
+
+            <CheckBox text="Operator" selected="{data>/columns/OPERATOR}" />
+   
+            <CheckBox text="Order" selected="{data>/columns/ORDER_NO}" />
+         
+
+            <CheckBox text="Order Status" selected="{data>/columns/ORDER_NO_STATUS}" />
+           
+
+            <CheckBox text="Scale" selected="{data>/columns/RESOURCE}" />
+               
+
+            <CheckBox text="Material" selected="{data>/columns/MATERIAL}" />
+         
+
+
+            <CheckBox text="Material Description" selected="{data>/columns/MATERIAL_DESCRIPTION}" />
+           
+
+            <CheckBox text="Component" selected="{data>/columns/COMPONENT}" />
+         
+
+            <CheckBox text="Component Description" selected="{data>/columns/COMPONENT_DESCRIPTION}" />    
+   
+             <CheckBox text="Target" selected="{data>/columns/TARGET}" />
+                
+
+
+
+            <CheckBox text="Upper Tolerance" selected="{data>/columns/UPPER_TOLERANCE}" />
+         
+            <CheckBox text="Lower Tolerance" selected="{data>/columns/LOWER_TOLERANCE}" />
+        
+
+
+            <CheckBox text="Actual Weight" selected="{data>/columns/QUANTITY}" />
+        
+
+            <CheckBox text="UOM" selected="{data>/columns/UOM}" />
+               
+                                   
+
+            <CheckBox text="Consumption Date and Time" selected="{data>/columns/CONSUMPTION_DATE}" />
+           
+        </VBox>
+    </content>
+    
+    <beginButton>
+        <Button text="OK" press=".onAdaptFiltersConfirm" />
+    </beginButton>
+    <endButton>
+        <Button text="Cancel" press=".onAdaptFiltersCancel" />
+    </endButton>
+</Dialog>
+</core:FragmentDefinition>
