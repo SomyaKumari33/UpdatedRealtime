@@ -214,10 +214,11 @@ sap.ui.define(
         var oModel = this.getView().getModel('data'),
           aLineItems = oModel.getProperty('/items');
 
-        var aResources = aLineItems.flatMap(oItem => {
-          return oItem.resources.filter(oResource => oResource.workCenter && oResource.workCenter.workCenter);
-        });
+        // var aResources = aLineItems.flatMap(oItem => {
+        //   return oItem.resources.filter(oResource => oResource.workCenter && oResource.workCenter.workCenter);
+        // });
 
+        var aResources = aLineItems.flatMap(oItem => oItem.resources);
         var aPromises = aResources.map(oItem => this._fetchResourceHeartBeat(oItem.resource, oItem.workCenter.workCenter));
 
         Promise.allSettled(aPromises).then(aValues => {
@@ -238,13 +239,13 @@ sap.ui.define(
 
         var sUrl =
           this.getPublicApiRestDataSourceUri() +
-          '/pe/api/v1/process/processDefinitions/start?key=REG_15272564-45a6-4c29-b599-96da2ee308e9&async=false';
+          '/pe/api/v1/process/processDefinitions/start?key=REG_112d9e32-1270-43fb-b587-c0d21d8424fd&async=false';
 
         // Create payload dynamically with fetched values
         var oPayload = {
           inPlant: this.getPodController().getUserPlant(),
-          inResource: sResourceId,
-          inWorkCenter: sWorkCenter
+          inResource: sResourceId
+          // inWorkCenter: sWorkCenter
         };
 
         return new Promise((resolve, reject) => {
