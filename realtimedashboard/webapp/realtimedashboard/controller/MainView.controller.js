@@ -7,14 +7,7 @@ sap.ui.define(
     'sap/ui/model/FilterOperator',
     'sap/base/Log'
   ],
-  function (
-    jQuery,
-    PluginViewController,
-    JSONModel,
-    Filter,
-    FilterOperator,
-    Log
-  ) {
+  function(jQuery, PluginViewController, JSONModel, Filter, FilterOperator, Log) {
     'use strict';
     var oLogger = Log.getLogger('realtimedashboard', Log.Level.INFO);
 
@@ -23,7 +16,7 @@ sap.ui.define(
         properties: {}
       },
 
-      onInit: function () {
+      onInit: function() {
         if (PluginViewController.prototype.onInit) {
           PluginViewController.prototype.onInit.apply(this, arguments);
         }
@@ -43,43 +36,36 @@ sap.ui.define(
         // Fetch initial data to display the card
       },
 
-      onBeforeRenderingPlugin: function () { 
-
-      },
-      onBeforeRendering: function () {
+      onBeforeRenderingPlugin: function() {},
+      onBeforeRendering: function() {
         this._getWorkCenterAssignments();
       },
 
-
-
-      onExit: function () {
+      onExit: function() {
         if (PluginViewController.prototype.onExit) {
           PluginViewController.prototype.onExit.apply(this, arguments);
         }
       },
 
-      onRefresh: async function () {
+      onRefresh: async function() {
         // Display a busy indicator to inform the user that data is being refreshed
         sap.ui.core.BusyIndicator.show(0);
 
         try {
           // Refresh resource and work center data
           await this._getWorkCenterAssignments();
-          sap.m.MessageToast.show("Data refreshed successfully.");
+          sap.m.MessageToast.show('Data refreshed successfully.');
         } catch (error) {
-          sap.m.MessageBox.error("Error while refreshing data: " + error.message);
+          sap.m.MessageBox.error('Error while refreshing data: ' + error.message);
         } finally {
           // Hide the busy indicator
           sap.ui.core.BusyIndicator.hide();
         }
       },
 
+      onAfterRendering: function() {},
 
-
-
-      onAfterRendering: function () { },
-
-      resourceStatusTextFormatter: function (sStatus) {
+      resourceStatusTextFormatter: function(sStatus) {
         if (!sStatus) return;
         switch (sStatus) {
           case 'ENABLED':
@@ -97,7 +83,7 @@ sap.ui.define(
         }
       },
 
-      resourceStatusIconFormatter: function (sStatus) {
+      resourceStatusIconFormatter: function(sStatus) {
         if (!sStatus) return;
         switch (sStatus) {
           case 'ENABLED':
@@ -111,7 +97,7 @@ sap.ui.define(
         }
       },
 
-      resourceStatusStatusFormatter: function (sStatus) {
+      resourceStatusStatusFormatter: function(sStatus) {
         if (!sStatus) return;
         switch (sStatus) {
           case 'ENABLED':
@@ -125,7 +111,7 @@ sap.ui.define(
         }
       },
 
-      _getWorkCenterAssignments: async function () {
+      _getWorkCenterAssignments: async function() {
         //Get resource data
         var aResources = await this._getResourceData().then(aResources => {
           return this._createCustomDataObject(aResources);
@@ -139,9 +125,10 @@ sap.ui.define(
 
         // this._createTableLineItems(aWorkCenters, aResources);
         this._createPanelLineItems(aWorkCenters, aResources);
+        this._getResourceHeartBeats();
       },
 
-      _getResourceData: function () {
+      _getResourceData: function() {
         var sUrl = this.getPublicApiRestDataSourceUri() + '/resource/v2/resources';
         var oParamters = {
           plant: this.getPodController().getUserPlant()
@@ -151,7 +138,7 @@ sap.ui.define(
         });
       },
 
-      _getWorkCenterData: function () {
+      _getWorkCenterData: function() {
         var sUrl = this.getPublicApiRestDataSourceUri() + 'workcenter/v2/workcenters';
         var oParameters = {
           plant: this.getPodController().getUserPlant()
@@ -161,7 +148,7 @@ sap.ui.define(
         });
       },
 
-      _createCustomDataObject: function (aData) {
+      _createCustomDataObject: function(aData) {
         return aData.map(oItem => {
           var oCustomData = oItem.customValues.reduce((acc, val) => {
             acc[val.attribute] = val.value;
@@ -172,78 +159,78 @@ sap.ui.define(
         });
       },
 
+      _createPanelLineItems: function(aWorkCenters, aResources) {
+        var oResourceByWorkCenter = {};
 
-      //Please replace code for _createPanelItems with below
-      _createPanelLineItems: async function (aWorkCenters, aResources) {
-        var oResourceByWorkCenter = await this._getResourceByWorkCenter(aWorkCenters, aResources);
+        for (var i = 0; i < aWorkCenters.length; i++) {
+          var oWorkCenter = aWorkCenters[i];
+          oWorkCenter.members.forEach(oMember => {
+            if (!oMember.resource && !oMember.resource.resource) return;
+
+            oMember.resource = aResources.find(oResource => oResource.resource === oMember.resource.resource);
+            oMember.resource.workCenter = oWorkCenter;
+
+            // Ignore resource if not of type PORTIONING or FORMULATION
+            if (!oMember.resource.types.find(value => value.type === 'PORTIONING' || value.type === 'FORMULATION')) {
+              return;
+            }
+
+            if (!oResourceByWorkCenter[oWorkCenter.workCenter]) {
+              oResourceByWorkCenter[oWorkCenter.workCenter] = {
+                workCenter: oWorkCenter.workCenter,
+                workCenterDesc: oWorkCenter.description,
+                resources: []
+              };
+            }
+
+            oResourceByWorkCenter[oWorkCenter.workCenter].resources.push(oMember.resource);
+          });
+        }
+
         var aResourceList = Object.values(oResourceByWorkCenter);
+
         var aResourceItems = aResourceList.reduce((acc, val) => {
           acc = acc.concat(val.resources.map(oItem => oItem.resource));
           return acc;
         }, []);
+
         var aResourcesWithoutWorkcenter = aResources.filter(oResource => {
           var oValidItem = oResource.types.find(value => value.type === 'PORTIONING' || value.type === 'FORMULATION');
           if (!oValidItem) return false;
           return !aResourceItems.includes(oResource.resource);
         });
+
         aResourceList.push({
           workCenter: 'Not Assigned',
           workCenterDesc: 'Not Assigned',
           resources: aResourcesWithoutWorkcenter
         });
+
         this.getView().getModel('data').setProperty('/items', aResourceList);
         return aResourceList;
       },
-      _getResourceByWorkCenter: async function (aWorkCenters, aResources) {
-        var oResourceByWorkCenter = {};
 
-        // Collect all promises for asynchronous operations
-        const aPromises = [];
+      _getResourceHeartBeats: function() {
+        var oModel = this.getView().getModel('data'),
+          aLineItems = oModel.getProperty('/items');
 
-        for (var i = 0; i < aWorkCenters.length; i++) {
-          var oWorkCenter = aWorkCenters[i];
+        var aResources = aLineItems.flatMap(oItem => {
+          return oItem.resources.filter(oResource => oResource.workCenter && oResource.workCenter.workCenter);
+        });
 
-          oWorkCenter.members.forEach(function (oMember) {
-            if (!oMember.resource || !oMember.resource.resource) return;
+        var aPromises = aResources.map(oItem => this._fetchResourceHeartBeat(oItem.resource, oItem.workCenter.workCenter));
 
-            // Create a promise for the asynchronous task
-            const oPromise = (async () => {
-              oMember.resource = aResources.find(oResource => oResource.resource === oMember.resource.resource);
-
-              // Ignore resource if not of type PORTIONING or FORMULATION
-              if (!oMember.resource.types.find(value => value.type === 'PORTIONING' || value.type === 'FORMULATION')) {
-                return;
-              }
-
-
-              // Listen to resource heartbeat
-              oMember.resource.status = await this._fetchResourceHeartBeat(
-                oMember.resource.resource,
-                oWorkCenter.workCenter
-              );
-
-              if (!oResourceByWorkCenter[oWorkCenter.workCenter]) {
-                oResourceByWorkCenter[oWorkCenter.workCenter] = {
-                  workCenter: oWorkCenter.workCenter,
-                  workCenterDesc: oWorkCenter.description,
-                  resources: [],
-                };
-              }
-
-              oResourceByWorkCenter[oWorkCenter.workCenter].resources.push(oMember.resource);
-            })();
-
-            // Add the promise to the list
-            aPromises.push(oPromise);
-          }, this);
-        }
-
-        return Promise.all(aPromises).then(() => oResourceByWorkCenter);
+        Promise.allSettled(aPromises).then(aValues => {
+          console.log('HeartBeat values: ', aValues);
+          aValues.forEach(oValue => {
+            var oItem = oValue.value;
+            var oResource = aResources.find(oResource => (oResource.resource = oItem.resource));
+            oResource.status = oItem.status;
+          });
+        });
       },
 
-
-
-      _fetchResourceHeartBeat: function (sResourceId, sWorkCenter) {
+      _fetchResourceHeartBeat: function(sResourceId, sWorkCenter) {
         if (!sResourceId || !sWorkCenter) {
           //DO error handling
           return;
@@ -263,27 +250,29 @@ sap.ui.define(
         return new Promise((resolve, reject) => {
           this.ajaxPostRequest(sUrl, oPayload, resolve, reject);
         })
-          // .then(function (oResponse) {
-          //   return oResponse.output === 1 ? 'ENABLED' : 'DISABLED';
-          // })
-          .then(function (oResponse) {
-            return oResponse.OUTPUT === 1 ? 'ENABLED' : 'DISABLED';
+          .then(function(oResponse) {
+            var oItem = {
+              resource: sResourceId,
+              workCenter: sWorkCenter,
+              status: oResponse.OUTPUT === 1 ? 'ENABLED' : 'DISABLED'
+            };
+            return oItem;
           })
-          .catch(function (oError, sHttpErrorMessage) {
+          .catch(function(oError, sHttpErrorMessage) {
             console.error('Error fetching process status', oError, sHttpErrorMessage);
           });
       },
 
-      onResourceValueHelpRequest: function () {
+      onResourceValueHelpRequest: function() {
         var oView = this.getView(),
           oResourceDataModel = oView.getModel('resourceData'),
           oResourceData = oResourceDataModel.getData();
 
         // Filter resources based on the types (PORTIONING or FORMULATION)
-        var aFilteredResources = oResourceData.filter(function (oResource) {
+        var aFilteredResources = oResourceData.filter(function(oResource) {
           return (
             oResource.types &&
-            oResource.types.some(function (type) {
+            oResource.types.some(function(type) {
               return type.type === 'PORTIONING' || type.type === 'FORMULATION';
             })
           );
@@ -302,7 +291,7 @@ sap.ui.define(
           // Bind the 'resourceData' model to the dialog
           this.oResourceVHDia.setModel(oResourceDataModel, 'resourceData');
 
-          this.oResourceVHDia.getTableAsync().then(function (oTable) {
+          this.oResourceVHDia.getTableAsync().then(function(oTable) {
             // Add columns to the table
             oTable.addColumn(
               new sap.ui.table.Column({
@@ -336,14 +325,14 @@ sap.ui.define(
         this.oResourceVHDia.open();
       },
 
-      onResourceVHDiaSearch: function (oEvent) {
+      onResourceVHDiaSearch: function(oEvent) {
         var oFilterBar = oEvent.getSource(),
           aFilterGroupItems = oFilterBar.getFilterGroupItems(),
           aFilters = [];
 
         // Create filters based on selected input values
         aFilters = aFilterGroupItems
-          .map(function (oFGI) {
+          .map(function(oFGI) {
             var oControl = oFGI.getControl();
             if (oControl && oControl.getValue) {
               return new Filter({
@@ -364,7 +353,7 @@ sap.ui.define(
         });
       },
 
-      onResourceVHDiaOKPress: function (oEvent) {
+      onResourceVHDiaOKPress: function(oEvent) {
         var aSelectedItems = oEvent.getParameter('tokens');
 
         // No Resource selected
@@ -384,11 +373,11 @@ sap.ui.define(
         oViewModel.setProperty('/isresourceSelected', true);
       },
 
-      onResourceVHDiaCancelPress: function (oEvent) {
+      onResourceVHDiaCancelPress: function(oEvent) {
         this.oResourceVHDia.close();
       },
 
-      onworkCenterValueHelpRequest: function () {
+      onworkCenterValueHelpRequest: function() {
         var oViewModel = this.getView().getModel('workCenterData'); // Correctly get the model
 
         if (!this.oworkCenterVHDia) {
@@ -398,7 +387,7 @@ sap.ui.define(
             this
           );
 
-          this.oworkCenterVHDia.getTableAsync().then(function (oTable) {
+          this.oworkCenterVHDia.getTableAsync().then(function(oTable) {
             // Add columns to the table
             oTable.addColumn(
               new sap.ui.table.Column({
@@ -431,7 +420,7 @@ sap.ui.define(
         this.oworkCenterVHDia.open();
       },
 
-      onworkCenterVHDiaSearch: function (oEvent) {
+      onworkCenterVHDiaSearch: function(oEvent) {
         const oFilterBar = oEvent.getSource();
         const aFilterGroupItems = oFilterBar.getFilterGroupItems();
         let aFilters = [];
@@ -466,7 +455,7 @@ sap.ui.define(
         }
       },
 
-      onworkCenterVHDiaOKPress: function (oEvent) {
+      onworkCenterVHDiaOKPress: function(oEvent) {
         var aSelectedItems = oEvent.getParameter('tokens');
 
         // No WorkCenter selected
@@ -491,13 +480,13 @@ sap.ui.define(
         this._fetchOperatorsForWorkCenter(sSelectedWorkCenter);
       },
 
-      _fetchOperatorsForWorkCenter: function (sWorkCenter) {
+      _fetchOperatorsForWorkCenter: function(sWorkCenter) {
         // Get WorkCenter data model
         var oWorkCenterModel = this.getView().getModel('workCenterData');
         var aWorkCenters = oWorkCenterModel.getData();
 
         // Find the WorkCenter object by its ID (workCenter)
-        var oSelectedWorkCenter = aWorkCenters.find(function (oWorkCenter) {
+        var oSelectedWorkCenter = aWorkCenters.find(function(oWorkCenter) {
           return oWorkCenter.workCenter === sWorkCenter;
         });
 
@@ -508,7 +497,7 @@ sap.ui.define(
           //   });
 
           var aOperators = []; // Initialize an empty array
-          oSelectedWorkCenter.userAssignments.map(function (oAssignment) {
+          oSelectedWorkCenter.userAssignments.map(function(oAssignment) {
             var operator = {
               userId: oAssignment.userId
             };
@@ -526,7 +515,7 @@ sap.ui.define(
         }
       },
 
-      onworkCenterVHDiaCancelPress: function () {
+      onworkCenterVHDiaCancelPress: function() {
         var oViewModel = this.getView().getModel('data');
 
         this.oworkCenterVHDia.close();
@@ -540,7 +529,7 @@ sap.ui.define(
         oViewModel.setProperty('/isOperatorEnabled', false);
       },
 
-      onOperatorValueHelpRequest: function () {
+      onOperatorValueHelpRequest: function() {
         var oViewModel = this.getView().getModel('data'); // The model with operators
 
         if (!this.oOperatorVHDia) {
@@ -555,7 +544,7 @@ sap.ui.define(
 
           // Configure table columns in the dialog
 
-          this.oOperatorVHDia.getTableAsync().then(function (oTable) {
+          this.oOperatorVHDia.getTableAsync().then(function(oTable) {
             oTable.addColumn(
               new sap.ui.table.Column({
                 label: new sap.m.Text({ text: 'User ID' }),
@@ -573,7 +562,7 @@ sap.ui.define(
 
         this.oOperatorVHDia.open();
       },
-      onOperatorVHDiaSearch: function (oEvent) {
+      onOperatorVHDiaSearch: function(oEvent) {
         var oFilterBar = oEvent.getSource(),
           aFilterGroupItems = oFilterBar.getFilterGroupItems(),
           aFilters = [];
@@ -581,7 +570,7 @@ sap.ui.define(
         //Create filters based on selected input Values
 
         aFilters = aFilterGroupItems
-          .map(function (oFGI) {
+          .map(function(oFGI) {
             var oControl = oFGI.getControl();
 
             if (oControl && oControl.getValue) {
@@ -607,7 +596,7 @@ sap.ui.define(
         });
       },
 
-      onOperatorVHDiaOKPress: function (oEvent) {
+      onOperatorVHDiaOKPress: function(oEvent) {
         var aSelectedItems = oEvent.getParameter('tokens');
 
         //No order selected
@@ -633,11 +622,11 @@ sap.ui.define(
         oViewModel.setProperty('/isOperatorSelected', true);
       },
 
-      onOperatorVHDiaCancelPress: function (oEvent) {
+      onOperatorVHDiaCancelPress: function(oEvent) {
         this.oOperatorVHDia.close();
       },
 
-      onCardTitlePress: function (oEvent) {
+      onCardTitlePress: function(oEvent) {
         var oSource = oEvent.getSource(),
           oContext = oSource.getBindingContext('data'),
           oSelectedResource = oContext.getObject(),
@@ -650,7 +639,7 @@ sap.ui.define(
         this.navigateToPage('CHARTPAGE');
       },
 
-      onSearch: function () {
+      onSearch: function() {
         var oView = this.getView();
 
         var aFilters = [];
@@ -696,7 +685,7 @@ sap.ui.define(
         oView.getModel('data').refresh(true);
       },
 
-      onClearFilters: function () {
+      onClearFilters: function() {
         var oView = this.getView();
 
         // Clear the values in the input fields
@@ -733,33 +722,33 @@ sap.ui.define(
         this._getWorkCenterAssignments(); // Fetch resources and work centers again
       },
 
-      onAfterRendering: function () {
+      onAfterRendering: function() {
         // this.getView().byId("backButton").setVisible(this.getConfiguration().backButtonVisible);
         // this.getView().byId("closeButton").setVisible(this.getConfiguration().closeButtonVisible);
         // this.getView().byId("headerTitle").setText(this.getConfiguration().title);
         // this.getView().byId("textPlugin").setText(this.getConfiguration().text);
       },
 
-      onBeforeRenderingPlugin: function () { },
+      onBeforeRenderingPlugin: function() {},
 
-      isSubscribingToNotifications: function () {
+      isSubscribingToNotifications: function() {
         var bNotificationsEnabled = true;
 
         return bNotificationsEnabled;
       },
 
-      getCustomNotificationEvents: function (sTopic) {
+      getCustomNotificationEvents: function(sTopic) {
         //return ["template"];
       },
 
-      getNotificationMessageHandler: function (sTopic) {
+      getNotificationMessageHandler: function(sTopic) {
         //if (sTopic === "template") {
         //    return this._handleNotificationMessage;
         //}
         return null;
       },
 
-      _handleNotificationMessage: function (oMsg) {
+      _handleNotificationMessage: function(oMsg) {
         var sMessage = "Message not found in payload 'message' property";
         if (oMsg && oMsg.parameters && oMsg.parameters.length > 0) {
           for (var i = 0; i < oMsg.parameters.length; i++) {
@@ -772,10 +761,9 @@ sap.ui.define(
         }
       },
 
-      onExit: function () {
+      onExit: function() {
         PluginViewController.prototype.onExit.apply(this, arguments);
       }
     });
   }
 );
-
