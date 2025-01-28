@@ -162,80 +162,69 @@ sap.ui.define(
       _createPanelLineItems: function(aWorkCenters, aResources) {
         var oResourceByWorkCenter = {};
 
-        for (var i = 0; i < aWorkCenters.length; i++) {
-          var oWorkCenter = aWorkCenters[i];
-          oWorkCenter.members.forEach(oMember => {
-            if (!oMember.resource && !oMember.resource.resource) return;
-
-            oMember.resource = aResources.find(oResource => oResource.resource === oMember.resource.resource);
-            oMember.resource.workCenter = oWorkCenter;
-
-            // Ignore resource if not of type PORTIONING or FORMULATION
-            if (!oMember.resource.types.find(value => value.type === 'PORTIONING' || value.type === 'FORMULATION')) {
-              return;
-            }
-
-            if (!oResourceByWorkCenter[oWorkCenter.workCenter]) {
-              oResourceByWorkCenter[oWorkCenter.workCenter] = {
-                workCenter: oWorkCenter.workCenter,
-                workCenterDesc: oWorkCenter.description,
-                resources: []
-              };
-            }
-
-            oResourceByWorkCenter[oWorkCenter.workCenter].resources.push(oMember.resource);
+        var aResourceList = aResources
+          .filter(oResource => oResource.types.find(value => value.type === 'PORTIONING' || value.type === 'FORMULATION'))
+          .map(oResource => {
+            return {
+              ...oResource,
+              status: ''
+            };
           });
-        }
+
+        aWorkCenters = aWorkCenters.map(oWorkCenter => {
+          var aList = oWorkCenter.members.map(oMember => oMember.resource.resource);
+          return {
+            ...oWorkCenter,
+            resourceList: aList
+          };
+        });
+
+        aResourceList.forEach(oResource => {
+          var sWorkCenterId = '',
+            sWorkCenterDesc = '';
+
+          var oWorkCenter = aWorkCenters.find(oWorkCenter => oWorkCenter.resourceList.includes(oResource.resource));
+
+          if (oWorkCenter) {
+            sWorkCenterId = oWorkCenter.workCenter;
+            sWorkCenterDesc = oWorkCenter.description;
+          }
+
+          if (!oResourceByWorkCenter[sWorkCenterId]) {
+            oResourceByWorkCenter[sWorkCenterId] = {
+              workCenter: sWorkCenterId,
+              workCenterDesc: sWorkCenterDesc,
+              resources: []
+            };
+          }
+
+          oResourceByWorkCenter[sWorkCenterId].resources.push(oResource);
+        });
 
         var aResourceList = Object.values(oResourceByWorkCenter);
 
-        var aResourceItems = aResourceList.reduce((acc, val) => {
-          acc = acc.concat(val.resources.map(oItem => oItem.resource));
-          return acc;
-        }, []);
-
-        var aResourcesWithoutWorkcenter = aResources.filter(oResource => {
-          var oValidItem = oResource.types.find(value => value.type === 'PORTIONING' || value.type === 'FORMULATION');
-          if (!oValidItem) return false;
-          return !aResourceItems.includes(oResource.resource);
-        });
-
-        aResourceList.push({
-          workCenter: 'Not Assigned',
-          workCenterDesc: 'Not Assigned',
-          resources: aResourcesWithoutWorkcenter
-        });
-
         this.getView().getModel('data').setProperty('/items', aResourceList);
+
         return aResourceList;
       },
 
-      _getResourceHeartBeats: function() {
+      _getResourceHeartBeats: async function() {
         var oModel = this.getView().getModel('data'),
           aLineItems = oModel.getProperty('/items');
 
-        // var aResources = aLineItems.flatMap(oItem => {
-        //   return oItem.resources.filter(oResource => oResource.workCenter && oResource.workCenter.workCenter);
-        // });
-
         var aResources = aLineItems.flatMap(oItem => oItem.resources);
-        var aPromises = aResources.map(oItem => this._fetchResourceHeartBeat(oItem.resource, oItem.workCenter.workCenter));
+        var aPromises = aResources.map(oResource => this._fetchResourceHeartBeat(oResource));
 
-        Promise.allSettled(aPromises).then(aValues => {
-          console.log('HeartBeat values: ', aValues);
-          aValues.forEach(oValue => {
-            var oItem = oValue.value;
-            var oResource = aResources.find(oResource => (oResource.resource = oItem.resource));
-            oResource.status = oItem.status;
-          });
-        });
+        await Promise.all(aPromises);
+        oModel.setProperty('/items', aLineItems);
       },
 
-      _fetchResourceHeartBeat: function(sResourceId, sWorkCenter) {
-        if (!sResourceId || !sWorkCenter) {
-          //DO error handling
-          return;
-        }
+      _fetchResourceHeartBeat: function(oResource) {
+        // if (!sResourceId || !sWorkCenter) {
+        //   //DO error handling
+        //   return;
+        // }
+        var sResourceId = oResource.resource;
 
         var sUrl =
           this.getPublicApiRestDataSourceUri() +
@@ -254,10 +243,10 @@ sap.ui.define(
           .then(function(oResponse) {
             var oItem = {
               resource: sResourceId,
-              workCenter: sWorkCenter,
               status: oResponse.OUTPUT === 1 ? 'ENABLED' : 'DISABLED'
             };
-            return oItem;
+            Object.assign(oResource, oItem);
+            return oResource;
           })
           .catch(function(oError, sHttpErrorMessage) {
             console.error('Error fetching process status', oError, sHttpErrorMessage);
