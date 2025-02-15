@@ -314,7 +314,9 @@ sap.ui.define(
             this._setLineItemResourceData(oViewModel, oSelectedContext.getPath(), oResourceData);
           });
         },
+        
 
+      
         onAssignedOperatorIdChange: function(oEvent) {
           var oControl = oEvent.getSource(),
             oLineItemContext = oControl.getBindingContext('viewModel'),
@@ -572,68 +574,50 @@ sap.ui.define(
         },
 
         onSaveAssignmentsPress: function(oEvent) {
-          var oControl = oEvent.getSource();
-
-          var oViewModel = this.getView().getModel('viewModel');
-
-          // var oViewModel = this.getView().getModel('viewModel'),
-
-          var aItems = oViewModel.getProperty('/lineItems');
-          var oSelectedContext = oControl.getBindingContext('viewModel');
-
-          var oSelectedRowData = oSelectedContext.getObject();
-
-          var isNew = oSelectedRowData.resource != '' || oSelectedRowData.userId != '';
-
-          oViewModel.setProperty(oSelectedContext.getPath() + '/isNew', isNew);
-          // Set isAssigned to true so that Resource & Operator fields become read-only
-          // oViewModel.setProperty("/isNew", true);
-
-          oViewModel.refresh(); // Ensure the UI updates
-          sap.m.MessageToast.show('Resource and Operator have been assigned successfully.');
-
+          var oViewModel = this.getView().getModel('viewModel'),
+            aItems = oViewModel.getProperty('/lineItems');
+  
           if (ErrorHandler.hasErrors()) {
             return MessageBox.error(this.getI18nText('fixErrorsBeforeSaveErrMsg'));
           }
-
+  
           //Validate table items
-
           var oTable = this.getView().byId('idMassOpAsmtTable');
-
           oTable.getItems().forEach(oItem => {
             var oData = oItem.getBindingContext('viewModel').getObject(),
               aCells = oItem.getCells();
-
+  
             if (!oData.isDirty && !oData.isNew) {
               return;
             }
-
+  
             if (!oData.resource && !oData.operator) {
               return;
             }
-
+  
             if (!oData.resource) {
               ErrorHandler.setErrorState(aCells[3], this.getI18nText('requiredFieldErrMsg'), 'selectedKey');
             }
-
+  
             if (!oData.operator) {
               ErrorHandler.setErrorState(aCells[5], this.getI18nText('requiredFieldErrMsg'));
             }
-
+  
             if (oData.autoAcceptance && parseInt(oData.acceptanceDelay) < 1) {
               ErrorHandler.setErrorState(aCells[7], this.getI18nText('inputPositiveNonZeroErrMsg'));
             }
           });
-
+  
           if (ErrorHandler.hasErrors()) {
             return MessageBox.error(this.getI18nText('fixErrorsBeforeSaveErrMsg'));
           }
-
+  
           var aItemsForServiceCall = aItems.filter(oItem => oItem.isDirty);
-
           this._saveResourceAssignments(aItemsForServiceCall);
-        },
-
+        
+  },
+        
+  
         onCancelAssignmentsPress: function(oEvent) {
           this._getAssignmentData(this.selectedOrder.order);
 

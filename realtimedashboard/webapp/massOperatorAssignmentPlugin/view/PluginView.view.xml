@@ -17,6 +17,8 @@
                 <filterbar:FilterBar
                     id="idFilterBar"
                     useToolbar="false"
+                    showClearOnFB="true"
+                    clear="onClearFilterbarBtnPress"
                     search=".onFBSearch"
                 >
                     <filterbar:filterGroupItems>
@@ -156,20 +158,7 @@
                     ]
                 }"
             >
-                <headerToolbar>
-                    <Toolbar>
-                        <ToolbarSpacer />
-                        <Button
-                            text="Revoke"
-                            type="Reject"
-                            press=".onRevokeResouceBtnPress"
-                        />
-                        <Button
-                            text="Clear"
-                            press=".onClearFilterbarBtnPress"
-                        />
-                    </Toolbar>
-                </headerToolbar>
+                
                 <columns>
                     <Column
                         mergeDuplicates="false"
@@ -330,7 +319,6 @@
                             <ToolbarSpacer width="2px" />
                             <Button
                                 text="Clear"
-                                type="Reject"
                                 press=".onClearResourceBtnPress"
                                 enabled="{
                                     parts:['viewModel>isNew', 'viewModel>isUnitValid'],
@@ -340,7 +328,6 @@
                             <ToolbarSpacer width="2px" />
                             <Button
                                 icon="sap-icon://delete"
-                                type="Reject"
                                 press=".onDeleteResourceBtnPress"
                                 visible="{= ${viewModel>isNew} === true}"
                                 tooltip="Delete Row"
@@ -360,6 +347,10 @@
                 visible="{viewModel>/isFiltersApplied}"
             >
                 <ToolbarSpacer />
+                 <Button
+                            text="Revoke"
+                            press=".onRevokeResouceBtnPress"
+                        />
                 <Button
                     text="Assign"
                     type="Emphasized"
@@ -368,9 +359,11 @@
                 <ToolbarSpacer width="10px" />
                 <Button
                     text="Cancel"
-                    type="Reject"
                     press=".onCancelAssignmentsPress"
                 />
+                 <!-- <ToolbarSpacer /> -->
+
+               
             </Toolbar>
         </f:footer>
     </f:DynamicPage>
