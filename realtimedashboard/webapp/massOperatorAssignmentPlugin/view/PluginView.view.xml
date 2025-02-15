@@ -124,10 +124,22 @@
                         >
                             <filterbar:control>
                                 <HBox>
-                                    <Text
+                                    <!-- <Text
                                         id="goodsReceiptQuantity"
                                         text="{orderData>/goodsReceiptQuantity}"
-                                    />
+                                    /> -->
+                                    <ProgressIndicator id="GRQuantity" 
+                                        percentValue="{
+                                            parts : [ 'grModel>/targetQuantity', 'grModel>/receivedQuantity' ], 
+                                            formatter: '.getPercentValue'
+                                        }" 
+                                        displayValue="{
+                                            parts : [ 'grModel>/targetQuantity', 'grModel>/receivedQuantity', 'grModel>/unitOfMeasure' ], 
+                                            formatter: '.formatter.getDisplayValue'
+                                        }" 
+                                        showValue="true" 
+                                        state="None" 
+                                        class="sapOrderCardQuantity"/>
                                 </HBox>
                             </filterbar:control>
                         </filterbar:FilterGroupItem>

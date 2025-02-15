@@ -1,16 +1,13 @@
 sap.ui.define(
   [
     'sap/ui/model/json/JSONModel',
-
     'sap/dm/dme/podfoundation/controller/PluginViewController',
-
     'sap/base/Log',
-
     'sap/m/MessageBox',
-
-    '../util/ErrorHandler'
+    '../util/ErrorHandler',
+    '../util/formatter'
   ],
-  function(JSONModel, PluginViewController, Log, MessageBox, ErrorHandler) {
+  function(JSONModel, PluginViewController, Log, MessageBox, ErrorHandler, formatter) {
     'use strict';
 
     var oLogger = Log.getLogger('massOperatorAssignmentPlugin', Log.Level.INFO);
@@ -21,6 +18,8 @@ sap.ui.define(
         metadata: {
           properties: {}
         },
+
+        formatter: formatter,
 
         onInit: function() {
           if (PluginViewController.prototype.onInit) {
@@ -61,6 +60,7 @@ sap.ui.define(
           this.getView().setModel(new JSONModel([]), 'resourceData');
           this.getView().setModel(new JSONModel({}), 'orderData');
           this.getView().setModel(new JSONModel([]), 'recipeData');
+          this.getView().setModel(new JSONModel([]), 'grModel');
         },
 
         /**
@@ -173,6 +173,8 @@ sap.ui.define(
               this._getWorkCenterData(this.workCenters);
               this.getView().getModel('orderData').setData(oOrderData);
 
+              this._getGRSummary();
+
               // Reset isDirty flag after loading the new order
               this.getView().getModel('viewModel').setProperty('/isDirty', false);
             }.bind(this)
@@ -229,7 +231,6 @@ sap.ui.define(
 
           if (!oControl) {
             console.error('onAssignedResourceChanged: No source control found.');
-
             return;
           }
 
@@ -237,7 +238,6 @@ sap.ui.define(
 
           if (!oSelectedContext) {
             console.error('onAssignedResourceChanged: No binding context found.');
-
             return;
           }
 
@@ -691,7 +691,6 @@ sap.ui.define(
 
           var oParameters = {
             plant: this.getPodController().getUserPlant(),
-
             order: sOrderId
           };
 
@@ -1391,8 +1390,38 @@ sap.ui.define(
           oModel.setProperty(sPath, oData);
         },
 
-        formatRowEditable:function(bIsNew, bIsUnitValid){
+        formatRowEditable: function(bIsNew, bIsUnitValid) {
           return bIsNew && bIsUnitValid;
+        },
+
+        _getGRSummary: function() {
+          var sUrl = this.getInventoryDataSourceUri() + 'order/goodsReceipt/summary';
+          var oParameters = {
+            sfc: this.selectedSFC,
+            shopOrder: this.selectedOrder.order
+          };
+          this.ajaxGetRequest(
+            sUrl,
+            oParameters,
+            function(oResponse) {
+              var oData = {
+                receivedQuantity: oResponse.receivedQuantity.value,
+                targetQuantity: oResponse.targetQuantity.value,
+                unitOfMeasure: oResponse.receivedQuantity.unitOfMeasure.uom,
+
+                sfcReceivedQuantity: oResponse.lineItems[0].receivedQuantity.value,
+                sfcTargetQuantity: oResponse.lineItems[0].targetQuantity.value,
+                sfcUnitOfMeasure: oResponse.lineItems[0].receivedQuantity.unitOfMeasure.uom
+              };
+
+              this.getView().getModel('grModel').setData(oData);
+            }.bind(this)
+          );
+        },
+
+        getPercentValue: function(plannedQty, completedQty) {
+          let percentValue = parseFloat(completedQty) / parseFloat(plannedQty) * 100;
+          return Math.floor(percentValue);
         }
       }
     );
