@@ -229,7 +229,10 @@
                             forceSelection="false"
                             showSecondaryValues="true"
                             columnRatio="2:3"
-                            enabled="{viewModel>isNew}"
+                            enabled="{
+                                parts:['viewModel>isNew', 'viewModel>isUnitValid'],
+                                formatter: '.formatRowEditable'
+                            }"
                             items="{viewModel>resourceList}"
                             selectedKey="{viewModel>resource}"
                             change=".onAssignedResourceChanged"
@@ -247,7 +250,10 @@
                         <Input
                             showSuggestion="true"
                             suggestionItems="{viewModel>userAssignments}"
-                            enabled="{viewModel>isNew}"
+                           enabled="{
+                                parts:['viewModel>isNew', 'viewModel>isUnitValid'],
+                                formatter: '.formatRowEditable'
+                            }"
                             value="{viewModel>operator}"
                             change=".onAssignedOperatorIdChange"
                         >
@@ -260,7 +266,10 @@
                         </Input>
                         <SegmentedButton
                             selectionChange=".onAutoAcceptanceModeChange"
-                            enabled="{viewModel>isNew}"
+                            enabled="{
+                                parts:['viewModel>isNew', 'viewModel>isUnitValid'],
+                                formatter: '.formatRowEditable'
+                            }"
                             selectedKey="{
                                 path: 'viewModel>autoAcceptance',
                                 formatter:'.autoAcceptanceFormatter'
@@ -278,7 +287,10 @@
                             </items>
                         </SegmentedButton>
                         <Input
-                            enabled="{viewModel>isNew}"
+                            enabled="{
+                                parts:['viewModel>isNew', 'viewModel>isUnitValid'],
+                                formatter: '.formatRowEditable'
+                            }"
                             value="{
                                 path: 'viewModel>acceptanceDelay',
                                 type: 'sap.ui.model.type.Integer'
@@ -288,7 +300,10 @@
                             change=".onAutoAcceptanceDelayChange"
                         />
                         <Input
-                            enabled="{viewModel>isNew}"
+                            enabled="{
+                                parts:['viewModel>isNew', 'viewModel>isUnitValid'],
+                                formatter: '.formatRowEditable'
+                            }"
                             value="{
                                 path: 'viewModel>correctionTime',
                                 type: 'sap.ui.model.type.Integer'
@@ -300,7 +315,6 @@
                         <Text
                             text="{
                                 path: 'viewModel>lastModified',
-
                                 formatter: '.dateTimeFormatter'
                             }"
                         />
@@ -308,14 +322,20 @@
                             <Button
                                 text="Add"
                                 press=".onAddResouceBtnPress"
-                                enabled="{viewModel>isNew}"
+                                enabled="{
+                                    parts:['viewModel>isNew', 'viewModel>isUnitValid'],
+                                    formatter: '.formatRowEditable'
+                                }"
                             />
                             <ToolbarSpacer width="2px" />
                             <Button
                                 text="Clear"
                                 type="Reject"
                                 press=".onClearResourceBtnPress"
-                                enabled="{viewModel>isNew}"
+                                enabled="{
+                                    parts:['viewModel>isNew', 'viewModel>isUnitValid'],
+                                    formatter: '.formatRowEditable'
+                                }"
                             />
                             <ToolbarSpacer width="2px" />
                             <Button
@@ -324,7 +344,10 @@
                                 press=".onDeleteResourceBtnPress"
                                 visible="{= ${viewModel>isNew} === true}"
                                 tooltip="Delete Row"
-                                enabled="{viewModel>isNew}"
+                                enabled="{
+                                    parts:['viewModel>isNew', 'viewModel>isUnitValid'],
+                                    formatter: '.formatRowEditable'
+                                }"
                             />
                         </HBox>
                     </ColumnListItem>
