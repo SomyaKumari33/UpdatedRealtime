@@ -1,0 +1,31 @@
+{
+    "sap.app": {
+        "id": "company.custom.plugins.realtimedashboard.massOperatorAssignmentPlugin",
+        "type": "component",
+        "applicationVersion": {
+            "version": "1.0.0"
+        },
+        "embeddedBy": "../"
+    },
+
+    "sap.ui5": {
+        "rootView": {
+            "viewName": "company.custom.plugins.realtimedashboard.massOperatorAssignmentPlugin.view.PluginView",
+            "type": "XML",
+            "id": "massOperatorAssignmentPlugin"
+        },
+        "resources": {
+            "css": [{
+                "uri": "css/style.css"
+            }]
+        },
+        "models": {
+            "i18n": {
+                "type": "sap.ui.model.resource.ResourceModel",
+                "settings": {
+                    "bundleName": "company.custom.plugins.realtimedashboard.massOperatorAssignmentPlugin.i18n.i18n"
+                }
+            }
+        }
+    }
+}

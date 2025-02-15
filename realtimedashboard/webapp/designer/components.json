@@ -76,6 +76,18 @@
             "productionProcessEnabled": true,
            "productionProcessTitle": "company.custom.plugins.realtimedashboard",
 			"supportedPodTypes": ["WORK_CENTER","OPERATION","ORDER","OTHER"]
-		}    
+		},
+		{
+			"id": "somyamassOperatorAssignmentPlugin",
+			"type": "VIEW_PLUGIN",
+			"allowMultipleInstances": false,
+			"name": "company.custom.plugins.realtimedashboard.massOperatorAssignmentPlugin",
+			"propertyEditor": "company.custom.plugins.realtimedashboard.massOperatorAssignmentPlugin.builder.PropertyEditor",
+			"i18n": "company.custom.plugins.realtimedashboard.massOperatorAssignmentPlugin.i18n.i18n",
+            "productionProcessEnabled": true,
+           "productionProcessTitle": "company.custom.plugins.realtimedashboard",
+			"supportedPodTypes": ["WORK_CENTER","OPERATION","ORDER","OTHER"]
+		}
+		   
 	]
 }

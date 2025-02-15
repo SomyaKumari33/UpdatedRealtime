@@ -183,7 +183,7 @@
         <Toolbar>
             <ToolbarSpacer />
             <Button id="exportButton" icon="sap-icon://excel-attachment" press=".onExportToExcel"/>
-            <Button id="PDFButton" icon="sap-icon://pdf-attachment" press="onExportToPDF"/>
+            <!-- <Button id="PDFButton" icon="sap-icon://pdf-attachment" press="onExportToPDF"/> -->
             <!-- <Button id="adaptFiltersButton" text="Adapt Filters" icon="sap-icon://filter" press=".onOpenAdaptFilters"/> -->
             <Button id="clearButton" text="Clear" icon="sap-icon://clear-filter" press="onClearFilters"/>
             <Button id="personalizeTableButton" icon="sap-icon://settings" press=".onOpenTablePersonalization"/>

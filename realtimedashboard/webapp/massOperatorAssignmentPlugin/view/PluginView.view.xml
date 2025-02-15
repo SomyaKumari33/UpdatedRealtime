@@ -1,0 +1,354 @@
+<mvc:View
+    controllerName="company.custom.plugins.realtimedashboard.massOperatorAssignmentPlugin.controller.PluginView"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:filterbar="sap.ui.comp.filterbar"
+    xmlns:core="sap.ui.core"
+    xmlns:f="sap.f"
+    xmlns="sap.m"
+    width="100%"
+    height="100%"
+>
+    <f:DynamicPage
+        id="idMassOpAsmtPage"
+        showFooter="true"
+    >
+        <f:header>
+            <f:DynamicPageHeader id="idMassOpAsmtDynHeader">
+                <filterbar:FilterBar
+                    id="idFilterBar"
+                    useToolbar="false"
+                    search=".onFBSearch"
+                >
+                    <filterbar:filterGroupItems>
+                        <filterbar:FilterGroupItem
+                            id="idOrderSearch"
+                            name="Order"
+                            label="Order"
+                            groupName="Group1"
+                            mandatory="true"
+                            visibleInFilterBar="true"
+                        >
+                            <filterbar:control>
+                                <Input
+                                    id="idOrderFilterInput"
+                                    required="true"
+                                    change=".onOrderInputChange"
+                                />
+                            </filterbar:control>
+                        </filterbar:FilterGroupItem>
+
+                        <filterbar:FilterGroupItem
+                            id="idSFCList"
+                            name="SFC"
+                            label="SFC"
+                            groupName="Group1"
+                            mandatory="true"
+                            visibleInFilterBar="true"
+                        >
+                            <filterbar:control>
+                                <Select
+                                    id="idSFCSelect"
+                                    items="{orderData>/sfcs}"
+                                    change=".onSFCSelectionChange"
+                                >
+                                    <core:Item
+                                        key="{orderData>sfc}"
+                                        text="{orderData>sfc}"
+                                    />
+                                </Select>
+                            </filterbar:control>
+                        </filterbar:FilterGroupItem>
+                        <filterbar:FilterGroupItem
+                            id="idMaterialInfo"
+                            name="MaterialInfo"
+                            label="Material"
+                            groupName="Group1"
+                            visibleInFilterBar="true"
+                        >
+                            <filterbar:control>
+                                <HBox>
+                                    <Text
+                                        id="idMaterialText"
+                                        text="{orderData>/material/material}"
+                                    />
+                                </HBox>
+                            </filterbar:control>
+                        </filterbar:FilterGroupItem>
+                        <filterbar:FilterGroupItem
+                            id="idMaterialdescription"
+                            name="Materialdescription"
+                            label="Description"
+                            groupName="Group1"
+                            visibleInFilterBar="true"
+                        >
+                            <filterbar:control>
+                                <HBox>
+                                    <Text
+                                        id="idMaterialText1"
+                                        text="{orderData>/material/description}"
+                                    />
+                                </HBox>
+                            </filterbar:control>
+                        </filterbar:FilterGroupItem>
+                        <filterbar:FilterGroupItem
+                            id="idMaterialplannedStartDate"
+                            name="MaterialplannedStartDate"
+                            label="Planned Start Date"
+                            groupName="Group1"
+                            visibleInFilterBar="true"
+                        >
+                            <filterbar:control>
+                                <HBox>
+                                    <!-- <Text
+                                        id="plannedStartDate"
+                                        text="{orderData>/plannedStartDate}"
+                                    /> -->
+                                      <Text
+                            text="{
+                                path: 'orderData>/plannedStartDate',
+
+                                formatter: '.dateTimeFormatter'
+                            }"
+                        />
+                                </HBox>
+                            </filterbar:control>
+                        </filterbar:FilterGroupItem>
+                        <filterbar:FilterGroupItem
+                            id="idMaterialgoodsReceiptQuantity"
+                            name="MaterialgoodsReceiptQuantity"
+                            label="Goods Receipt Quantity"
+                            groupName="Group1"
+                            visibleInFilterBar="true"
+                        >
+                            <filterbar:control>
+                                <HBox>
+                                    <Text
+                                        id="goodsReceiptQuantity"
+                                        text="{orderData>/goodsReceiptQuantity}"
+                                    />
+                                </HBox>
+                            </filterbar:control>
+                        </filterbar:FilterGroupItem>
+                    </filterbar:filterGroupItems>
+                </filterbar:FilterBar>
+            </f:DynamicPageHeader>
+        </f:header>
+        <f:content>
+            <Table
+                id="idMassOpAsmtTable"
+                mode="MultiSelect"
+                selectionChange=".onTableItemsSelectionChange"
+                items="{
+                    path:'viewModel>/lineItems',
+                    sorter: [
+                        {
+                            path: 'workCenter',
+                            descending: false
+                        },
+                        {
+                            path: 'phaseId',
+                            descending: false
+                        },
+                        {
+                            path: 'component',
+                            descending: false
+                        }
+                    ]
+                }"
+            >
+                <headerToolbar>
+                    <Toolbar>
+                        <ToolbarSpacer />
+                        <Button
+                            text="Revoke"
+                            type="Reject"
+                            press=".onRevokeResouceBtnPress"
+                        />
+                        <Button
+                            text="Clear"
+                            press=".onClearFilterbarBtnPress"
+                        />
+                    </Toolbar>
+                </headerToolbar>
+                <columns>
+                    <Column
+                        mergeDuplicates="false"
+                        mergeFunctionName="getTitle"
+                    >
+                        <Text text="Work Center" />
+                    </Column>
+                    <Column
+                        mergeDuplicates="false"
+                        width="6rem"
+                    >
+                        <Text text="Phase Id" />
+                    </Column>
+                    <Column
+                        mergeDuplicates="false"
+                        mergeFunctionName="getTitle"
+                    >
+                        <Text text="Component" />
+                    </Column>
+                    <Column>
+                        <Text text="Asset / Resource" />
+                    </Column>
+                    <Column>
+                        <Text text="Resource Type" />
+                    </Column>
+                    <Column>
+                        <Text text="Operator" />
+                    </Column>
+                    <Column>
+                        <Text text="Acceptance Type" />
+                    </Column>
+                    <Column width="6rem">
+                        <Text text="Acceptance Delay" />
+                    </Column>
+                    <Column>
+                        <Text text="Correction Time" />
+                    </Column>
+                    <Column>
+                        <Text text="Last Modified" />
+                    </Column>
+                    <Column>
+                        <Text text="Actions" />
+                    </Column>
+                </columns>
+                <items>
+                    <ColumnListItem>
+                        <ObjectIdentifier
+                            title="{viewModel>workCenter}"
+                            text="{viewModel>workCenterDesc}"
+                        />
+                        <Text text="{viewModel>phaseId}" />
+                        <ObjectIdentifier
+                            title="{viewModel>component}"
+                            text="{viewModel>componentDesc}"
+                        />
+                        <Select
+                            forceSelection="false"
+                            showSecondaryValues="true"
+                            columnRatio="2:3"
+                            enabled="{viewModel>isNew}"
+                            items="{viewModel>resourceList}"
+                            selectedKey="{viewModel>resource}"
+                            change=".onAssignedResourceChanged"
+                        >
+                            <!-- <core:Item key="{resourceData>resource}" text="{resourceData>resource} {resourceData>description}"/> -->
+                            <core:ListItem
+                                key="{viewModel>resource}"
+                                text="{viewModel>resource}"
+                                additionalText="{viewModel>description}"
+                            />
+                        </Select>
+                        <VBox items="{viewModel>resourceType}">
+                            <Text text="{viewModel>type}" />
+                        </VBox>
+                        <Input
+                            showSuggestion="true"
+                            suggestionItems="{viewModel>userAssignments}"
+                            enabled="{viewModel>isNew}"
+                            value="{viewModel>operator}"
+                            change=".onAssignedOperatorIdChange"
+                        >
+                            <suggestionItems>
+                                <core:ListItem
+                                    key="{viewModel>userId}"
+                                    text="{viewModel>userId}"
+                                />
+                            </suggestionItems>
+                        </Input>
+                        <SegmentedButton
+                            selectionChange=".onAutoAcceptanceModeChange"
+                            enabled="{viewModel>isNew}"
+                            selectedKey="{
+                                path: 'viewModel>autoAcceptance',
+                                formatter:'.autoAcceptanceFormatter'
+                            }"
+                        >
+                            <items>
+                                <SegmentedButtonItem
+                                    key="auto"
+                                    text="Automatic"
+                                />
+                                <SegmentedButtonItem
+                                    key="manual"
+                                    text="Manual"
+                                />
+                            </items>
+                        </SegmentedButton>
+                        <Input
+                            enabled="{viewModel>isNew}"
+                            value="{
+                                path: 'viewModel>acceptanceDelay',
+                                type: 'sap.ui.model.type.Integer'
+                                
+                            }"
+                            editable="{= ${viewModel>autoAcceptance} &amp;&amp; ${viewModel>isNew}}"
+                            change=".onAutoAcceptanceDelayChange"
+                        />
+                        <Input
+                            enabled="{viewModel>isNew}"
+                            value="{
+                                path: 'viewModel>correctionTime',
+                                type: 'sap.ui.model.type.Integer'
+                               
+                            }"
+                            editable="{= ${viewModel>autoAcceptance} &amp;&amp; ${viewModel>isNew}}"
+                            change=".onCorrectionTimeInputChange"
+                        />
+                        <Text
+                            text="{
+                                path: 'viewModel>lastModified',
+
+                                formatter: '.dateTimeFormatter'
+                            }"
+                        />
+                        <HBox>
+                            <Button
+                                text="Add"
+                                press=".onAddResouceBtnPress"
+                                enabled="{viewModel>isNew}"
+                            />
+                            <ToolbarSpacer width="2px" />
+                            <Button
+                                text="Clear"
+                                type="Reject"
+                                press=".onClearResourceBtnPress"
+                                enabled="{viewModel>isNew}"
+                            />
+                            <ToolbarSpacer width="2px" />
+                            <Button
+                                icon="sap-icon://delete"
+                                type="Reject"
+                                press=".onDeleteResourceBtnPress"
+                                visible="{= ${viewModel>isNew} === true}"
+                                tooltip="Delete Row"
+                                enabled="{viewModel>isNew}"
+                            />
+                        </HBox>
+                    </ColumnListItem>
+                </items>
+            </Table>
+        </f:content>
+        <f:footer>
+            <Toolbar
+                id="idMassOpAsmtFooter"
+                visible="{viewModel>/isFiltersApplied}"
+            >
+                <ToolbarSpacer />
+                <Button
+                    text="Assign"
+                    type="Emphasized"
+                    press=".onSaveAssignmentsPress"
+                />
+                <ToolbarSpacer width="10px" />
+                <Button
+                    text="Cancel"
+                    type="Reject"
+                    press=".onCancelAssignmentsPress"
+                />
+            </Toolbar>
+        </f:footer>
+    </f:DynamicPage>
+</mvc:View>

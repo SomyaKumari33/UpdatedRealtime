@@ -180,8 +180,8 @@ sap.ui.define(
         });
 
         aResourceList.forEach(oResource => {
-          var sWorkCenterId = '',
-            sWorkCenterDesc = '';
+          var sWorkCenterId = 'Not Assigned',
+            sWorkCenterDesc = 'Not Assigned';
 
           var oWorkCenter = aWorkCenters.find(oWorkCenter => oWorkCenter.resourceList.includes(oResource.resource));
 
@@ -200,8 +200,16 @@ sap.ui.define(
 
           oResourceByWorkCenter[sWorkCenterId].resources.push(oResource);
         });
+            
+        // Reorder the list to place "Not Assigned" at the end
+
 
         var aResourceList = Object.values(oResourceByWorkCenter);
+        aResourceList.sort((a, b) => {
+          if (a.workCenter === 'Not Assigned') return 1;
+          if (b.workCenter === 'Not Assigned') return -1;
+          return 0;
+      });
 
         this.getView().getModel('data').setProperty('/items', aResourceList);
 
